@@ -1,4 +1,4 @@
-const sendNotification = require('../config/mailConfig');
+const sendNotification = require('../config/mailconfig');
 
 const emailTemplates = {
     // Welcome Email (Request Received)
