@@ -64,7 +64,7 @@ const { sendSuccessEmail } = require('../utils/emailservice');
  */
 exports.createAppointment = async (req, res) => {
     try {
-        const { patientId, patientName, doctorId, doctorName, date, duration, reason, notes } = req.body;
+        const { patientId, patientName, doctorId, doctorName, date, timeSlot, duration, reason, notes } = req.body;
 
         // Validation: Required fields
         if (!patientId || !patientName || !doctorId || !date) {
@@ -100,11 +100,15 @@ exports.createAppointment = async (req, res) => {
         }
 
         // Validation: Check if appointment slot is actually available
-        // (Doctor's schedule might have this slot marked as "blocked")
         const appointmentDate = new Date(date);
-        const appointmentHours = appointmentDate.getHours();
-        const appointmentMinutes = appointmentDate.getMinutes();
-        const slotTimeString = `${String(appointmentHours).padStart(2, '0')}:${String(appointmentMinutes).padStart(2, '0')}`;
+        let slotTimeString = timeSlot;
+        
+        // Fallback for legacy requests that don't send timeSlot
+        if (!slotTimeString) {
+            const appointmentHours = appointmentDate.getHours();
+            const appointmentMinutes = appointmentDate.getMinutes();
+            slotTimeString = `${String(appointmentHours).padStart(2, '0')}:${String(appointmentMinutes).padStart(2, '0')}`;
+        }
 
         // Check if doctor has a schedule and the slot is available
         let isSlotAvailable = true;
@@ -127,9 +131,18 @@ exports.createAppointment = async (req, res) => {
         // Doctor double-booking protection (works for both new + existing patients):
         // If ANY appointment exists for the same doctor at the exact same datetime,
         // the slot is not available.
+        const startOfDay = new Date(appointmentDate);
+        startOfDay.setHours(0,0,0,0);
+        const endOfDay = new Date(startOfDay);
+        endOfDay.setDate(endOfDay.getDate() + 1);
+
         const existingDoctorAppointment = await Appointment.findOne({
             doctor: doctorId,
-            date: appointmentDate,
+            date: { $gte: startOfDay, $lt: endOfDay },
+            $or: [
+                { timeSlot: slotTimeString },
+                { date: appointmentDate }
+            ],
             status: { $ne: 'Cancelled' }
         });
 
@@ -143,7 +156,11 @@ exports.createAppointment = async (req, res) => {
         // Check if patient already has an appointment at the exact same time
         const existingAppointment = await Appointment.findOne({
             patient: patientId,
-            date: appointmentDate,
+            date: { $gte: startOfDay, $lt: endOfDay },
+            $or: [
+                { timeSlot: slotTimeString },
+                { date: appointmentDate }
+            ],
             status: { $ne: 'Cancelled' }
         });
         if (existingAppointment) {
@@ -172,6 +189,7 @@ exports.createAppointment = async (req, res) => {
             doctor: doctorId,
             doctorName: doctorName || doctor.name,
             date: appointmentDate,
+            timeSlot: slotTimeString,
             duration: duration || 30,
             reason: reason || 'General Consultation',
             notes: notes || '',
@@ -556,8 +574,13 @@ exports.getDoctorAvailableSlots = async (req, res) => {
             status: { $ne: 'Cancelled' }  // Don't count cancelled appointments
         });
 
-        // Build list of booked times
-        const bookedTimes = existingAppointments.map(apt => apt.date.toTimeString().slice(0, 5)); // "09:00"
+        // Build list of booked times (prioritize timeSlot field)
+        const bookedTimes = existingAppointments.map(apt => {
+            if (apt.timeSlot) return apt.timeSlot;
+            const hours = String(apt.date.getHours()).padStart(2, '0');
+            const minutes = String(apt.date.getMinutes()).padStart(2, '0');
+            return `${hours}:${minutes}`;
+        });
 
         // Enhance slots with availability status
         const slotsWithStatus = doctor.schedule.availableSlots.map(slot => ({
@@ -605,8 +628,8 @@ exports.getDoctorAvailableSlots = async (req, res) => {
  */
 exports.getQueue = async (req, res) => {
     try {
-        // Use UTC-string approach to match getAllAppointments — avoids local-timezone drift
-        const todayStr = new Date().toISOString().split('T')[0]; // "2026-05-20"
+        // Use UTC-string approach, but allow frontend to override with local date
+        const todayStr = req.query.date || new Date().toISOString().split('T')[0]; // "2026-05-20"
         const startOfDay = new Date(todayStr);                   // 2026-05-20T00:00:00.000Z
         const endOfDay   = new Date(todayStr);
         endOfDay.setDate(endOfDay.getDate() + 1);                // 2026-05-21T00:00:00.000Z

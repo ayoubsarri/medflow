@@ -55,8 +55,8 @@ export default function BookAppointmentContent() {
     setLoadingSlots(true);
     try {
       const dateStr = date.toISOString().split("T")[0]; // YYYY-MM-DD
-      // Note: we can use receptionist endpoint since we just need the doctor's slots
-      const res = await fetch(`${API_RECEPTIONIST}/doctors/${selectedDoctor._id}/available-slots?date=${dateStr}`);
+      // Note: we use the new public doctor endpoint because patients don't have receptionist permissions
+      const res = await fetch(`${API_DOCTOR}/${selectedDoctor._id}/available-slots?date=${dateStr}`);
       const data = await res.json();
       if (res.ok && data.data) {
         setDynamicSlots(data.data);

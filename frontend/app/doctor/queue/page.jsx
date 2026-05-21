@@ -84,13 +84,27 @@ export default function DoctorQueue() {
         setLoading(true);
         setError(null);
 
-        const response = await fetch(`${API_APPOINTMENTS}/queue`);
+        const d = new Date();
+        const todayLocal = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        
+        const response = await fetch(`${API_APPOINTMENTS}/queue?date=${todayLocal}`);
         if (!response.ok) {
           throw new Error(`Queue fetch failed (${response.status})`);
         }
 
         const payload = await response.json();
-        const queueData = payload?.data || {};
+        const doctorId = localStorage.getItem('staffId');
+        
+        let queueData = { currentCall: null, upcoming: [] };
+        
+        // Find the specific doctor's queue if it exists
+        if (payload?.data?.doctors && Array.isArray(payload.data.doctors)) {
+            const docQueue = payload.data.doctors.find(d => d.doctorId === doctorId);
+            if (docQueue) {
+                queueData = docQueue;
+            }
+        }
+
         const currentCall = queueData.currentCall ? normalizeAppointment(queueData.currentCall, true) : null;
         const upcoming = Array.isArray(queueData.upcoming)
           ? queueData.upcoming.map((apt) => normalizeAppointment(apt, false))

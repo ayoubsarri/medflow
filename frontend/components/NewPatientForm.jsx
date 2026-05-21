@@ -20,6 +20,7 @@ export default function NewPatientForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState({});
+  const [availableTimeSlots, setAvailableTimeSlots] = useState([]);
 
   useEffect(() => {
     fetch(`${API_DOCTOR}/public`)
@@ -30,6 +31,25 @@ export default function NewPatientForm() {
       })
       .catch(() => setDoctors([]));
   }, []);
+
+  useEffect(() => {
+    if (!selectedDoctor || !selectedDate) {
+      setAvailableTimeSlots([]);
+      return;
+    }
+    
+    fetch(`${API_DOCTOR}/${selectedDoctor}/available-slots?date=${selectedDate}`)
+      .then(r => r.ok ? r.json() : { data: [] })
+      .then(data => {
+        const slotsObj = data.data || [];
+        const slots = slotsObj.filter(s => s.status === 'available').map(s => s.startTime);
+        setAvailableTimeSlots(slots);
+      })
+      .catch(err => {
+        console.error('Failed to fetch available slots:', err);
+        setAvailableTimeSlots([]);
+      });
+  }, [selectedDoctor, selectedDate]);
 
   const validate = () => {
     const errs = {};
@@ -135,6 +155,7 @@ export default function NewPatientForm() {
         <div>
           <TimeSlotSelector
             selectedTime={selectedTime}
+            timeSlots={availableTimeSlots}
             onSelectTime={(t) => {
               setSelectedTime(t);
               setFieldErrors(prev => ({ ...prev, time: '' }));

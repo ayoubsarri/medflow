@@ -89,8 +89,10 @@ export default function QueuePage() {
       try {
         setLoading(true);
         
-        // Fetch today's appointments
-        const today = new Date().toISOString().split("T")[0];
+        // Fetch today's appointments (local time)
+        const d = new Date();
+        const today = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        
         const appointmentsRes = await apiFetch(
           `${API_RECEPTIONIST}/appointments?date=${today}`
         );
@@ -103,7 +105,7 @@ export default function QueuePage() {
           // Bug 10 fix: fallback to populated patient object if patientName is empty
           name: appt.patientName ||
                 (appt.patient ? `${appt.patient.firstName || ''} ${appt.patient.lastName || ''}`.trim() : 'Unknown Patient'),
-          appointmentTime: new Date(appt.date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
+          appointmentTime: appt.timeSlot || new Date(appt.date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
           status: "absent",  // New appointments start as absent
           doctorName: appt.doctorName
         }));

@@ -6,6 +6,10 @@ const { protect } = require('../middleware/auth');
 // [GET] /public — Fetches a simple list of all active doctors for the public form | Access: Public
 router.get('/public', doctorController.getPublicDoctors);
 
+const appointmentController = require('../controllers/appointmentController');
+// [GET] /:doctorId/available-slots — Fetches available slots for a doctor on a specific date | Access: Public
+router.get('/:doctorId/available-slots', appointmentController.getDoctorAvailableSlots);
+
 // [GET] /dashboard — Fetches today's checked-in and completed patients | Access: Doctor
 router.get('/dashboard', protect, doctorController.getDoctorDashboard);
 

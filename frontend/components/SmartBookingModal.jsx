@@ -208,6 +208,7 @@ export default function SmartBookingModal({
         doctorId: selectedDoctor,
         doctorName: doctorObj?.name || "Unknown Doctor",
         date: appointmentDateTime.toISOString(),
+        timeSlot: selectedSlot.startTime,
         duration: 30,  // Default slot duration
         reason: appointmentReason,
         notes: appointmentReason,
