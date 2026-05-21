@@ -160,42 +160,7 @@ export default function StaffLoginPage() {
           </Link>
         </div>
 
-        {/* Demo Credentials Card */}
-        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-100">
-          <p className="text-xs font-semibold text-blue-900 mb-4 uppercase tracking-wide">
-            Demo Credentials
-          </p>
-          
-          <div className="space-y-3">
-            {/* Admin */}
-            <div className="bg-white rounded-lg p-3">
-              <p className="text-xs font-medium text-gray-700 mb-1">Admin</p>
-              <code className="text-xs text-gray-600 block font-mono">
-                admin@clinic.com / password123
-              </code>
-            </div>
 
-            {/* Doctor */}
-            <div className="bg-white rounded-lg p-3">
-              <p className="text-xs font-medium text-gray-700 mb-1">Doctor</p>
-              <code className="text-xs text-gray-600 block font-mono">
-                dr.nouar@clinic.com / password123
-              </code>
-            </div>
-
-            {/* Receptionist */}
-            <div className="bg-white rounded-lg p-3">
-              <p className="text-xs font-medium text-gray-700 mb-1">Receptionist</p>
-              <code className="text-xs text-gray-600 block font-mono">
-                reception@clinic.com / password123
-              </code>
-            </div>
-          </div>
-
-          <p className="text-xs text-gray-600 mt-4 text-center">
-            For testing purposes only
-          </p>
-        </div>
 
         {/* Footer */}
         <div className="text-center mt-6 text-sm text-gray-600">

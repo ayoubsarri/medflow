@@ -254,9 +254,9 @@ exports.toggleStatus = async (req, res) => {
  */
 exports.getStaffSchedule = async (req, res) => {
     try {
-        let staffMember = await Doctor.findById(req.params.id).select('name role schedule');
-        if (!staffMember) staffMember = await Receptionist.findById(req.params.id).select('name role schedule');
-        if (!staffMember) staffMember = await Admin.findById(req.params.id).select('name role schedule');
+        let staffMember = await Doctor.findById(req.params.id).select('name role schedule workingDays');
+        if (!staffMember) staffMember = await Receptionist.findById(req.params.id).select('name role schedule workingDays');
+        if (!staffMember) staffMember = await Admin.findById(req.params.id).select('name role schedule workingDays');
 
         if (!staffMember) {
             return res.status(404).json({ message: 'Staff member not found' });
@@ -314,7 +314,7 @@ exports.getStaffSchedule = async (req, res) => {
  */
 exports.updateStaffSchedule = async (req, res) => {
     try {
-        const { slotDuration, restInterval, shiftStart, shiftEnd, slots } = req.body;
+        const { slotDuration, restInterval, shiftStart, shiftEnd, slots, workingDays } = req.body;
 
         // ── Basic Validation ────────────────────────────────────────────────────
         // STUDENT DEFENSE NOTE:
@@ -367,6 +367,10 @@ exports.updateStaffSchedule = async (req, res) => {
             shiftEnd,
             availableSlots: slots || []
         };
+        
+        if (workingDays !== undefined) {
+            staffMember.workingDays = workingDays;
+        }
 
         await staffMember.save();
 

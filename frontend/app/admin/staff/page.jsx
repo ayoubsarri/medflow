@@ -97,6 +97,9 @@ function ScheduleModal({ doctor, onClose, onSave, showToast }) {
   const [restInterval,  setRestInterval]  = useState(5);
   const [shiftStart,    setShiftStart]    = useState('08:00');
   const [shiftEnd,      setShiftEnd]      = useState('17:00');
+  const [workingDays,   setWorkingDays]   = useState({
+    Mon: true, Tue: true, Wed: true, Thu: true, Fri: false, Sat: false, Sun: false
+  });
 
   // The generated time cards grid
   const [slots,   setSlots]   = useState([]);
@@ -118,6 +121,18 @@ function ScheduleModal({ doctor, onClose, onSave, showToast }) {
           setShiftEnd(    data.schedule.shiftEnd      || '17:00');
           setSlots(data.schedule.availableSlots);
         }
+        
+        // Populate working days if available, otherwise default
+        const daysArray = data.workingDays ? data.workingDays.split(',').map(d => d.trim()) : ['Mon', 'Tue', 'Wed', 'Thu'];
+        setWorkingDays({
+          Mon: daysArray.includes('Mon'),
+          Tue: daysArray.includes('Tue'),
+          Wed: daysArray.includes('Wed'),
+          Thu: daysArray.includes('Thu'),
+          Fri: daysArray.includes('Fri'),
+          Sat: daysArray.includes('Sat'),
+          Sun: daysArray.includes('Sun'),
+        });
       } catch (err) {
         console.error('Failed to load schedule:', err);
       } finally {
@@ -165,12 +180,18 @@ function ScheduleModal({ doctor, onClose, onSave, showToast }) {
       showToast('Please generate slots first', 'error');
       return;
     }
+    
+    const daysString = Object.entries(workingDays)
+      .filter(([_, isSelected]) => isSelected)
+      .map(([day]) => day)
+      .join(', ');
+
     try {
       setSaving(true);
       const res = await apiFetch(`${API_ADMIN}/staff/${doctor._id}/schedule`, {
         method:  'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ slotDuration, restInterval, shiftStart, shiftEnd, slots })
+        body:    JSON.stringify({ slotDuration, restInterval, shiftStart, shiftEnd, slots, workingDays: daysString })
       });
       if (!res.ok) {
         const err = await res.json();
@@ -212,6 +233,27 @@ function ScheduleModal({ doctor, onClose, onSave, showToast }) {
           {/* ── Configuration Section ──────────────────────────────────────── */}
           <div className="bg-muted/30 rounded-lg p-4">
             <h3 className="text-sm font-semibold text-foreground mb-3">Schedule Configuration</h3>
+            
+            {/* Working Days Selection */}
+            <div className="mb-4">
+              <label className="block text-xs font-medium text-foreground mb-2">
+                Working Days
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
+                  <label key={day} className={`flex items-center justify-center px-3 py-1.5 rounded-full border text-xs font-medium cursor-pointer transition-colors ${workingDays[day] ? 'bg-[#1d4ed8] border-[#1d4ed8] text-white' : 'bg-background border-border text-foreground hover:bg-muted'}`}>
+                    <input
+                      type="checkbox"
+                      className="hidden"
+                      checked={workingDays[day]}
+                      onChange={(e) => setWorkingDays(prev => ({ ...prev, [day]: e.target.checked }))}
+                    />
+                    {day}
+                  </label>
+                ))}
+              </div>
+            </div>
+
             <div className="grid grid-cols-2 gap-3">
 
               {/* Slot Duration */}
@@ -249,7 +291,7 @@ function ScheduleModal({ doctor, onClose, onSave, showToast }) {
                 </select>
               </div>
 
-              {/* Shift Start */}
+            {/* Shift Start */}
               <div>
                 <label className="block text-xs font-medium text-foreground mb-1">
                   Shift Start
@@ -383,7 +425,7 @@ export default function StaffManagement() {
   const [newStaff, setNewStaff] = useState({
     name: '', email: '', role: 'Receptionist',
     phone: '', dob: '', emergencyContact: '',
-    workingHours: '08:00 - 18:00', workingDays: 'Mon, Tue, Wed, Thu, Fri'
+    workingHours: '08:00 - 18:00', workingDays: 'Mon, Tue, Wed, Thu'
   });
 
   // ── Load all staff on mount ─────────────────────────────────────────────────
@@ -416,7 +458,7 @@ export default function StaffManagement() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Failed to add staff');
       setStaff([...staff, data]);
-      setNewStaff({ name: '', email: '', role: 'Receptionist', phone: '', dob: '', emergencyContact: '', workingHours: '08:00 - 18:00', workingDays: 'Mon, Tue, Wed, Thu, Fri' });
+      setNewStaff({ name: '', email: '', role: 'Receptionist', phone: '', dob: '', emergencyContact: '', workingHours: '08:00 - 18:00', workingDays: 'Mon, Tue, Wed, Thu' });
       setShowAddModal(false);
       showToast('Staff member added successfully');
     } catch (err) { showToast(err.message, 'error'); }
