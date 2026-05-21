@@ -113,7 +113,7 @@ export default function BookAppointmentContent() {
         body: JSON.stringify({
           patientId,
           doctorId:        selectedDoctor._id,
-          date:            selectedDate.toISOString(),
+          date:            `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`,
           timeSlot:        selectedTime,
           additionalNotes: notes,
         }),

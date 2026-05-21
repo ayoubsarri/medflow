@@ -19,7 +19,9 @@ export default function LiveQueueScreen() {
 
   const fetchQueue = async () => {
     try {
-      const res = await fetch(`${API_APPOINTMENTS}/queue`);
+      const d = new Date();
+      const todayLocal = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+      const res = await fetch(`${API_APPOINTMENTS}/queue?date=${todayLocal}`);
       if (!res.ok) return;
       const data = await res.json();
       if (!data.success || !data.data) return;
