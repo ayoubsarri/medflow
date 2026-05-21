@@ -1,16 +1,16 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { API_DOCTOR, API_PATIENTS } from '@/config/api';
+import { API_DOCTOR, API_PATIENTS, API_RECEPTIONIST } from '@/config/api';
 import ReasonSelector from '@/components/ReasonSelector';
-
-const TIME_SLOTS = ['08:00', '09:00', '10:00', '11:00', '13:00', '14:00', '15:00', '16:00'];
 
 export default function BookAppointmentContent() {
   const [doctors, setDoctors] = useState([]);
   const [loadingDoctors, setLoadingDoctors] = useState(true);
+  const [dynamicSlots, setDynamicSlots] = useState([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
 
-  const [selectedDoctor, setSelectedDoctor] = useState(null); // full doctor object
+  const [selectedDoctor, setSelectedDoctor] = useState(null);
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedTime, setSelectedTime] = useState('');
   const [notes, setNotes] = useState('');
@@ -44,10 +44,31 @@ export default function BookAppointmentContent() {
     return false;
   };
 
-  const handleDateSelect = (day) => {
+  const handleDateSelect = async (day) => {
     if (isDisabled(day)) return;
-    setSelectedDate(new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day));
+    const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
+    setSelectedDate(date);
     setSelectedTime('');
+
+    // Bug 12: Fetch available slots dynamically
+    if (!selectedDoctor) return;
+    setLoadingSlots(true);
+    try {
+      const dateStr = date.toISOString().split("T")[0]; // YYYY-MM-DD
+      // Note: we can use receptionist endpoint since we just need the doctor's slots
+      const res = await fetch(`${API_RECEPTIONIST}/doctors/${selectedDoctor._id}/available-slots?date=${dateStr}`);
+      const data = await res.json();
+      if (res.ok && data.data) {
+        setDynamicSlots(data.data);
+      } else {
+        setDynamicSlots([]);
+      }
+    } catch (e) {
+      console.warn("Failed to fetch slots", e);
+      setDynamicSlots([]);
+    } finally {
+      setLoadingSlots(false);
+    }
   };
 
   const renderCalendar = () => {
@@ -201,17 +222,30 @@ export default function BookAppointmentContent() {
           <div>
             <label className="block text-sm font-semibold text-gray-900 mb-3">Select Time</label>
             {selectedDate ? (
-              <div className="grid grid-cols-4 gap-2">
-                {TIME_SLOTS.map(time => (
-                  <button key={time} type="button" onClick={() => setSelectedTime(time)}
-                    className={`p-3 rounded-lg font-medium text-sm border-2 transition-all ${
-                      selectedTime === time
-                        ? 'border-[#1d4ed8] bg-blue-50 text-[#1d4ed8]'
-                        : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
-                    }`}
-                  >{time}</button>
-                ))}
-              </div>
+              loadingSlots ? (
+                <p className="text-gray-400 text-sm">Loading available times...</p>
+              ) : dynamicSlots.length === 0 ? (
+                <p className="text-gray-400 text-sm">No times available for this date.</p>
+              ) : (
+                <div className="grid grid-cols-4 gap-2">
+                  {dynamicSlots.map((slot, idx) => {
+                    const time = slot.startTime;
+                    const isAvailable = slot.status === "available";
+                    return (
+                      <button key={idx} type="button" onClick={() => isAvailable && setSelectedTime(time)}
+                        disabled={!isAvailable}
+                        className={`p-3 rounded-lg font-medium text-sm border-2 transition-all ${
+                          selectedTime === time
+                            ? 'border-[#1d4ed8] bg-blue-50 text-[#1d4ed8]'
+                            : isAvailable
+                              ? 'border-gray-200 bg-white text-gray-700 hover:border-[#1d4ed8]'
+                              : 'border-red-200 bg-red-50 text-red-400 cursor-not-allowed opacity-50'
+                        }`}
+                      >{time}</button>
+                    );
+                  })}
+                </div>
+              )
             ) : (
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center text-sm text-gray-500">
                 Please select a date first

@@ -1,19 +1,7 @@
 /**
- * =============================================================================
  * DOCTOR MESSAGES PAGE
- * =============================================================================
- * 
- * PURPOSE:
  * Chat interface for doctor to communicate with the receptionist.
- * Full-height chat window for better usability.
- * 
- * FEATURES:
- * - Large, full-height chat window
- * - Message bubbles with timestamps
- * - Sent/seen status indicators
- * - Real-time message simulation
- * 
- * =============================================================================
+ * Messages are persisted in localStorage so they survive page reloads.
  */
 
 "use client";
@@ -21,68 +9,63 @@
 import { useState, useRef, useEffect } from "react";
 import { Send, Check, CheckCheck, User } from "lucide-react";
 
-// -----------------------------------------------------------------------------
-// MOCK DATA: Initial messages with receptionist
-// -----------------------------------------------------------------------------
-const initialMessages = [
-  { id: 1, text: "Good morning Dr. Ahmed, patient Fatima Zohra has arrived.", sender: "receptionist", time: "09:15", status: "seen" },
-  { id: 2, text: "Thank you Sarah, I will see her after the current patient.", sender: "doctor", time: "09:16", status: "seen" },
-  { id: 3, text: "Patient Ahmed Benali is asking to reschedule his 14:00 appointment.", sender: "receptionist", time: "10:30", status: "seen" },
-  { id: 4, text: "Please reschedule him to tomorrow at the same time if available.", sender: "doctor", time: "10:32", status: "seen" },
-  { id: 5, text: "Done. Tomorrow 14:00 is confirmed for Ahmed Benali.", sender: "receptionist", time: "10:35", status: "seen" },
-  { id: 6, text: "A new patient just walked in without appointment. Says it is urgent.", sender: "receptionist", time: "11:00", status: "sent" },
-];
+const STORAGE_KEY = "medflow_doctor_messages";
 
 export default function DoctorMessages() {
-  // -------------------------------------------------------------------------
-  // STATE
-  // -------------------------------------------------------------------------
-  const [messages, setMessages] = useState(initialMessages);
+  const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
   const messagesEndRef = useRef(null);
 
-  // -------------------------------------------------------------------------
-  // AUTO-SCROLL: Scroll to bottom when new messages arrive
-  // -------------------------------------------------------------------------
+  // Load persisted messages from localStorage on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        setMessages(JSON.parse(saved));
+      }
+    } catch (e) {
+      // ignore
+    }
+  }, []);
+
+  // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // -------------------------------------------------------------------------
-  // SEND MESSAGE HANDLER
-  // -------------------------------------------------------------------------
   const handleSend = () => {
-    // Don't send empty messages
     if (!newMessage.trim()) return;
-    
-    // Get current time formatted
+
     const now = new Date();
     const time = now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false });
-    
-    // Add message to list
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: Date.now(),
-        text: newMessage,
-        sender: "doctor",
-        time,
-        status: "sent",
-      },
-    ]);
+
+    const newMsg = {
+      id: Date.now(),
+      text: newMessage,
+      sender: "doctor",
+      time,
+      status: "sent",
+    };
+
+    setMessages((prev) => {
+      const updated = [...prev, newMsg];
+      // Persist to localStorage
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(updated)); } catch (e) {}
+      return updated;
+    });
+
     setNewMessage("");
-    
+
     // Simulate message being seen after 1 second
     setTimeout(() => {
-      setMessages((prev) =>
-        prev.map((m) => (m.status === "sent" ? { ...m, status: "seen" } : m))
-      );
+      setMessages((prev) => {
+        const updated = prev.map((m) => (m.status === "sent" ? { ...m, status: "seen" } : m));
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(updated)); } catch (e) {}
+        return updated;
+      });
     }, 1000);
   };
 
-  // -------------------------------------------------------------------------
-  // KEYBOARD HANDLER: Send on Enter key
-  // -------------------------------------------------------------------------
   const handleKeyDown = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -90,27 +73,20 @@ export default function DoctorMessages() {
     }
   };
 
-  // =========================================================================
-  // RENDER
-  // =========================================================================
   return (
     <div className="h-[calc(100vh-120px)] md:h-[calc(100vh-80px)] flex flex-col pb-16 md:pb-0">
-      {/* Page Title - No subtitle */}
       <h1 className="text-2xl font-bold text-foreground mb-4">Messages</h1>
 
-      {/* ===================================================================
-          CHAT CONTAINER - Full height
-          =================================================================== */}
       <div className="flex-1 bg-card border border-border rounded-xl flex flex-col overflow-hidden shadow-sm">
-        
-        {/* Chat Header - Contact info */}
+
+        {/* Chat Header */}
         <div className="p-4 border-b border-border bg-muted/30">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center dark:bg-emerald-900/30">
               <User className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
             </div>
             <div>
-              <p className="font-semibold text-foreground text-lg">Sarah (Receptionist)</p>
+              <p className="font-semibold text-foreground text-lg">Karima Belmahdi (Receptionist)</p>
               <div className="flex items-center gap-2">
                 <span className="w-2 h-2 bg-emerald-500 rounded-full"></span>
                 <p className="text-sm text-emerald-600 dark:text-emerald-400">Online</p>
@@ -119,42 +95,46 @@ export default function DoctorMessages() {
           </div>
         </div>
 
-        {/* Messages Area - Scrollable */}
+        {/* Messages Area */}
         <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4">
-          {messages.map((msg) => (
-            <div
-              key={msg.id}
-              className={`flex ${msg.sender === "doctor" ? "justify-end" : "justify-start"}`}
-            >
+          {messages.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              No messages yet. Start a conversation with the receptionist.
+            </div>
+          ) : (
+            messages.map((msg) => (
               <div
-                className={`max-w-[85%] md:max-w-[70%] rounded-2xl px-4 py-3 ${
-                  msg.sender === "doctor"
-                    ? "bg-[#1d4ed8] text-white"
-                    : "bg-muted text-foreground"
-                }`}
+                key={msg.id}
+                className={`flex ${msg.sender === "doctor" ? "justify-end" : "justify-start"}`}
               >
-                <p className="text-sm md:text-base leading-relaxed">{msg.text}</p>
-                <div className={`flex items-center justify-end gap-1.5 mt-2 ${
-                  msg.sender === "doctor" ? "text-blue-200" : "text-muted-foreground"
-                }`}>
-                  <span className="text-xs">{msg.time}</span>
-                  {/* Show check marks for sent messages from doctor */}
-                  {msg.sender === "doctor" && (
-                    msg.status === "seen" ? (
-                      <CheckCheck className="w-4 h-4" />
-                    ) : (
-                      <Check className="w-4 h-4" />
-                    )
-                  )}
+                <div
+                  className={`max-w-[85%] md:max-w-[70%] rounded-2xl px-4 py-3 ${
+                    msg.sender === "doctor"
+                      ? "bg-[#1d4ed8] text-white"
+                      : "bg-muted text-foreground"
+                  }`}
+                >
+                  <p className="text-sm md:text-base leading-relaxed">{msg.text}</p>
+                  <div className={`flex items-center justify-end gap-1.5 mt-2 ${
+                    msg.sender === "doctor" ? "text-blue-200" : "text-muted-foreground"
+                  }`}>
+                    <span className="text-xs">{msg.time}</span>
+                    {msg.sender === "doctor" && (
+                      msg.status === "seen" ? (
+                        <CheckCheck className="w-4 h-4" />
+                      ) : (
+                        <Check className="w-4 h-4" />
+                      )
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-          {/* Invisible element to scroll to */}
+            ))
+          )}
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Input Area - Fixed at bottom */}
+        {/* Input Area */}
         <div className="p-4 border-t border-border bg-background">
           <div className="flex gap-3">
             <input

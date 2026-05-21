@@ -124,7 +124,7 @@ export default function DoctorQueue() {
   const completedCount = appointments.filter((a) => a.status === "completed").length;
 
   // Start consultation - changes status to is_serving and opens modal
-  const handleStart = (apt) => {
+  const handleStart = async (apt) => {
     // Complete any currently serving patient first
     setAppointments((prev) =>
       prev.map((a) => {
@@ -133,14 +133,66 @@ export default function DoctorQueue() {
         return a;
       })
     );
-    setSelectedPatient(apt);
+
+    // Bug 4: PATCH appointment status to "In Progress" so receptionist queue reflects it
+    try {
+      await fetch(`${API_APPOINTMENTS}/${apt.id}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "In Progress" }),
+      });
+    } catch (e) {
+      console.warn("[DoctorQueue] Could not update appointment status:", e.message);
+    }
+
+    // Bug 5: Fetch full patient profile so consultation modal has complete history
+    let enrichedPatient = { ...apt };
+    try {
+      const profileRes = await fetch(`${API_APPOINTMENTS}/${apt.id}`);
+      if (profileRes.ok) {
+        const profileData = await profileRes.json();
+        const fullAppt = profileData.data || profileData;
+        const p = fullAppt.patient || {};
+        enrichedPatient = {
+          ...apt,
+          allergies: p.allergies || apt.allergies || "None",
+          chronicConditions: p.chronicConditions || apt.chronicConditions || "None",
+          lastVisit: p.lastVisit || apt.lastVisit || "First visit",
+          contact: p.phone || apt.contact || "",
+          dateOfBirth: p.dateOfBirth || "",
+          bloodType: p.bloodType || "",
+          visitHistory: p.visitHistory || [],
+          medicalRecords: p.medicalRecords || [],
+        };
+      }
+    } catch (e) {
+      console.warn("[DoctorQueue] Could not fetch patient profile:", e.message);
+    }
+
+    setSelectedPatient(enrichedPatient);
     setShowModal(true);
     showToast("Consultation started", "info");
   };
 
   // Save & Complete handler for ConsultationModal
-  const handleSaveComplete = (data) => {
+  const handleSaveComplete = async (data) => {
     if (!selectedPatient) return;
+
+    // Bug 9: Persist notes and prescription to DB
+    try {
+      await fetch(`${API_APPOINTMENTS}/${selectedPatient.id}/notes`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          notes: data.notes,
+          prescription: data.prescription,
+          status: "Completed",
+        }),
+      });
+    } catch (e) {
+      console.warn("[DoctorQueue] Could not save consultation notes:", e.message);
+    }
+
     setAppointments((prev) =>
       prev.map((a) =>
         a.id === selectedPatient.id

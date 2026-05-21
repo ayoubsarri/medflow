@@ -12,7 +12,7 @@ const staffUsers = [
   { email: "dr.nouar@clinic.com", password: "password123", role: "Doctor", name: "Dr. Ahmed Nouar" },
   { email: "dr.ryad@clinic.com", password: "password123", role: "Doctor", name: "Dr. Selina Ryad" },
   { email: "dr.hassan@clinic.com", password: "password123", role: "Doctor", name: "Dr. Karim Hassan" },
-  { email: "reception@clinic.com", password: "password123", role: "Receptionist", name: "Karima Reception" },
+  { email: "reception@clinic.com", password: "password123", role: "Receptionist", name: "Karima Belmahdi" },
   { email: "fatima@clinic.com", password: "password123", role: "Receptionist", name: "Fatima Desk" }
 ];
 

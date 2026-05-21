@@ -100,7 +100,9 @@ export default function QueuePage() {
         const queueData = (appointmentsData.data || []).map((appt, idx) => ({
           id: appt._id,
           ticketNum: 100 + idx + 1,
-          name: appt.patientName,
+          // Bug 10 fix: fallback to populated patient object if patientName is empty
+          name: appt.patientName ||
+                (appt.patient ? `${appt.patient.firstName || ''} ${appt.patient.lastName || ''}`.trim() : 'Unknown Patient'),
           appointmentTime: new Date(appt.date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
           status: "absent",  // New appointments start as absent
           doctorName: appt.doctorName

@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Send, Check, CheckCheck } from "lucide-react";
 
 import { API_RECEPTIONIST } from "@/config/api";
 import apiFetch from "@/utils/apiFetch";
+
+const STORAGE_KEY = "medflow_receptionist_chats";
 
 export default function MessagesPage() {
   const [doctors, setDoctors] = useState([]);
@@ -12,7 +14,9 @@ export default function MessagesPage() {
   const [chats, setChats] = useState({});
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(true);
+  const messagesEndRef = useRef(null);
 
+  // Load doctors + restore persisted chats from localStorage
   useEffect(() => {
     const fetchDoctors = async () => {
       try {
@@ -33,8 +37,22 @@ export default function MessagesPage() {
         setLoading(false);
       }
     };
+
+    // Restore chats from localStorage
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) setChats(JSON.parse(saved));
+    } catch (e) {
+      // ignore parse errors
+    }
+
     fetchDoctors();
   }, []);
+
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [chats, selectedDoctor]);
 
   const currentDoctor = doctors.find((d) => d.id === selectedDoctor);
   const currentChat = chats[selectedDoctor] || [];
@@ -50,10 +68,15 @@ export default function MessagesPage() {
       status: "sent",
     };
 
-    setChats((prev) => ({
-      ...prev,
-      [selectedDoctor]: [...(prev[selectedDoctor] || []), message],
-    }));
+    setChats((prev) => {
+      const updated = {
+        ...prev,
+        [selectedDoctor]: [...(prev[selectedDoctor] || []), message],
+      };
+      // Persist to localStorage
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(updated)); } catch (e) {}
+      return updated;
+    });
 
     setNewMessage("");
   }
@@ -141,6 +164,7 @@ export default function MessagesPage() {
               </div>
             ))
           )}
+          <div ref={messagesEndRef} />
         </div>
 
         {/* Message Input */}
@@ -157,7 +181,7 @@ export default function MessagesPage() {
             <button
               onClick={sendMessage}
               disabled={!newMessage.trim()}
-              className="px-4 py-2 bg-[#1d4ed8] text-white rounded-lg hover:bg-[#1d4ed8] disabled:opacity-50 min-h-[44px] flex items-center gap-2"
+              className="px-4 py-2 bg-[#1d4ed8] text-white rounded-lg hover:bg-[#1e40af] disabled:opacity-50 min-h-[44px] flex items-center gap-2"
               aria-label="Send message"
             >
               <Send className="w-5 h-5" />

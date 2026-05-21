@@ -18,12 +18,12 @@ import { User, Mail, Phone, Calendar, MapPin, Edit, Save, X, ChevronDown, Chevro
 
 // Receptionist profile data
 const initialProfile = {
-  name: "Sarah Johnson",
-  email: "sarah.johnson@medclinic.com",
+  name: "Karima Belmahdi",
+  email: "reception@clinic.com",
   role: "Receptionist",
-  dob: "1992-08-15",
+  dob: "1994-03-22",
   phone: "0555-987-654",
-  address: "45 Medical District, Algiers",
+  address: "12 Clinic Street, Algiers",
   emergencyContact: "0555-123-456",
 };
 

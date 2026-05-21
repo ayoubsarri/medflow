@@ -152,7 +152,7 @@ const seedData = async () => {
       // fileCode, firstName, lastName, dob, phone, email, chronic, allergies, hereditary, emergency
       ['P-2026-001','Youcef','Mammeri','1985-03-14','0551-11-22-33','youcef.mammeri@gmail.com','Diabète de type 2','Pénicilline','Diabète','0661-11-22-33'],
       ['P-2026-002','Amina','Khelifi','1972-07-28','0662-22-33-44','amina.khelifi@gmail.com','Hypertension artérielle','Aucune','HTA','0772-22-33-44'],
-      ['P-2026-003','Sofiane','Hadj','1990-11-05','0773-33-44-55','sofiane.hadj@gmail.com','Aucune','Aspirine','Aucune','0553-33-44-55'],
+      ['P-2026-003','Yacine','Hamidi','1990-11-05','0773-33-44-55','yacine.hamidi@gmail.com','Aucune','Aspirine','Aucune','0553-33-44-55'],
       ['P-2026-004','Nadia','Boualem','1968-01-20','0554-44-55-66','nadia.boualem@gmail.com','Asthme','Poussière','Asthme','0664-44-55-66'],
       ['P-2026-005','Omar','Ferhat','1955-09-12','0665-55-66-77','omar.ferhat@gmail.com','Insuffisance coronarienne','Iode','Maladies cardiaques','0775-55-66-77'],
       ['P-2026-006','Fatima','Rahmani','1980-04-30','0776-66-77-88','fatima.rahmani@gmail.com','Aucune','Aucune','Aucune','0556-66-77-88'],

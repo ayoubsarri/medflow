@@ -25,4 +25,17 @@ const triggerEmail = async (type, recipientEmail, data) => {
     await sendNotification(recipientEmail, template.subject, template.text);
 };
 
-module.exports = triggerEmail;
+const sendSuccessEmail = async (data) => {
+    return triggerEmail('confirmed', data.to, {
+        name: data.patientName,
+        doctorName: data.doctorName,
+        date: new Date(data.appointmentDate).toLocaleDateString(),
+        time: new Date(data.appointmentDate).toLocaleTimeString(),
+        fileCode: data.appointmentId // Fallback to appointmentId if fileCode is not passed
+    });
+};
+
+module.exports = {
+    triggerEmail,
+    sendSuccessEmail
+};

@@ -160,7 +160,8 @@ export default function SmartBookingModal({
     };
 
     fetchSlots();
-  }, [selectedDoctor, selectedDate, doctors, showToast]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedDoctor, selectedDate]);
 
   // ─────────────────────────────────────────────────────────────────────────────
   // HANDLER: Create appointment when slot is selected
@@ -197,12 +198,9 @@ export default function SmartBookingModal({
 
       const doctorObj = doctors.find(d => d._id === selectedDoctor);
 
-      // Construct the appointment date-time by combining the date and time from slot
-      // Example: date = "2026-04-19", startTime = "09:00"
-      // Result: "2026-04-19T09:00:00Z"
-      const [hour, minute] = selectedSlot.startTime.split(":").map(Number);
-      const appointmentDateTime = new Date(selectedDate);
-      appointmentDateTime.setHours(hour, minute, 0, 0);
+      // Construct the appointment date-time using local time (avoids UTC offset bug)
+      // e.g. "2026-05-21" + "T" + "09:00" + ":00" = "2026-05-21T09:00:00" (local)
+      const appointmentDateTime = new Date(`${selectedDate}T${selectedSlot.startTime}:00`);
 
       const appointmentData = {
         patientId: patient._id,
